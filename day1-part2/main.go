@@ -34,6 +34,7 @@ func main() {
 	fmt.Println(result)
 
 	//5856
+	//5847
 }
 
 func startInputStream(startPoint int) <-chan operation {
@@ -112,7 +113,13 @@ func incrementWithWrapCount(state, increment, base int) (newState, wraps int) {
 
 func decrementWithWrapCount(state, decrement, base int) (newState, wraps int) {
 	newState = (state - decrement%base + base) % base
-	wraps = (decrement + (base - state)) / base
+	if state == 0 {
+		wraps = decrement / base
+	} else if decrement >= state {
+		wraps = 1 + (decrement-state)/base
+	} else {
+		wraps = 0
+	}
 	return newState, wraps
 }
 
