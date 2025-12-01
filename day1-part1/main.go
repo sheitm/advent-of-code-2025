@@ -21,6 +21,9 @@ type operation struct {
 	argument      int
 }
 
+//go:embed input.txt
+var input string
+
 func (o operation) String() string {
 	op := ""
 	switch o.operationType {
@@ -34,9 +37,6 @@ func (o operation) String() string {
 
 	return fmt.Sprintf("%s %d", op, o.argument)
 }
-
-//go:embed input.txt
-var input string
 
 func main() {
 	inputStream := startInputStream(50)
