@@ -62,11 +62,11 @@ func startDial(input <-chan dialManipulation, base int) (zeroChan <-chan int) {
 	zeroChannel := make(chan int)
 
 	go func(zc chan<- int) {
+		defer close(zc)
 		position := 0
 		for {
 			op, ok := <-input
 			if !ok {
-				close(zeroChannel)
 				return
 			}
 			wraps := 0
