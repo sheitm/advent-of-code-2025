@@ -8,39 +8,39 @@ import (
 	"strings"
 )
 
-type operationType int
+type rotationDirection int
 
 const (
-	operationTypeSet operationType = iota
-	operationTypeRight
-	operationTypeLeft
+	rotationSet rotationDirection = iota
+	rotationRight
+	rotationLeft
 )
 
-type operation struct {
-	operationType operationType
-	argument      int
+type dialManipulation struct {
+	direction rotationDirection
+	clicks    int
 }
 
 //go:embed input.txt
 var input string
 
-func (o operation) String() string {
+func (o dialManipulation) String() string {
 	op := ""
-	switch o.operationType {
-	case operationTypeSet:
+	switch o.direction {
+	case rotationSet:
 		op = "set"
-	case operationTypeRight:
+	case rotationRight:
 		op = "right"
-	case operationTypeLeft:
+	case rotationLeft:
 		op = "left"
 	}
 
-	return fmt.Sprintf("%s %d", op, o.argument)
+	return fmt.Sprintf("%s %d", op, o.clicks)
 }
 
 func main() {
-	inputStream := startInputStream(50)
-	zeroCountChan := startStater(inputStream)
+	inputStream := startManipulationInputStream(50)
+	zeroCountChan := startDial(inputStream)
 	resultChan := startOutputter(zeroCountChan)
 
 	result := <-resultChan
@@ -48,9 +48,9 @@ func main() {
 	fmt.Println(result)
 }
 
-func startStater(input <-chan operation) (zeroChan <-chan struct{}) {
+func startDial(input <-chan dialManipulation) (zeroChan <-chan struct{}) {
 	zeroChannel := make(chan struct{})
-	go func(ch <-chan operation, zChan chan<- struct{}) {
+	go func(ch <-chan dialManipulation, zChan chan<- struct{}) {
 		state := 0
 		for {
 			op, ok := <-ch
@@ -58,13 +58,13 @@ func startStater(input <-chan operation) (zeroChan <-chan struct{}) {
 				close(zeroChannel)
 				return
 			}
-			switch op.operationType {
-			case operationTypeSet:
-				state = op.argument % 100
-			case operationTypeRight:
-				state = (state + op.argument) % 100
-			case operationTypeLeft:
-				state = (state - op.argument%100 + 100) % 100
+			switch op.direction {
+			case rotationSet:
+				state = op.clicks % 100
+			case rotationRight:
+				state = (state + op.clicks) % 100
+			case rotationLeft:
+				state = (state - op.clicks%100 + 100) % 100
 			}
 
 			if state == 0 {
@@ -76,14 +76,14 @@ func startStater(input <-chan operation) (zeroChan <-chan struct{}) {
 	return zeroChannel
 }
 
-func startInputStream(startPoint int) <-chan operation {
-	output := make(chan operation)
+func startManipulationInputStream(startPoint int) <-chan dialManipulation {
+	output := make(chan dialManipulation)
 
 	lines := strings.Split(input, "\n")
 
-	go func(ch chan<- operation) {
+	go func(ch chan<- dialManipulation) {
 		defer close(ch)
-		ch <- operation{operationType: operationTypeSet, argument: startPoint}
+		ch <- dialManipulation{direction: rotationSet, clicks: startPoint}
 
 		for _, line := range lines {
 			op, err := splitLine(line)
@@ -117,21 +117,21 @@ func startOutputter(zeroStream <-chan struct{}) (resultChan <-chan int) {
 	return rc
 }
 
-func splitLine(line string) (operation, error) {
-	var ot operationType
+func splitLine(line string) (dialManipulation, error) {
+	var ot rotationDirection
 	switch line[0] {
 	case 'R', 'r':
-		ot = operationTypeRight
+		ot = rotationRight
 	case 'L', 'l':
-		ot = operationTypeLeft
+		ot = rotationLeft
 	default:
-		return operation{}, errors.New("invalid operation type")
+		return dialManipulation{}, errors.New("invalid dialManipulation type")
 	}
 
 	arg, err := strconv.Atoi(line[1:])
 	if err != nil {
-		return operation{}, err
+		return dialManipulation{}, err
 	}
 
-	return operation{operationType: ot, argument: arg}, nil
+	return dialManipulation{direction: ot, clicks: arg}, nil
 }

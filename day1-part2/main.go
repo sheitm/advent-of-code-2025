@@ -8,44 +8,40 @@ import (
 	"strings"
 )
 
-type operationType int
+type rotationDirection int
 
 const (
-	operationTypeSet operationType = iota
-	operationTypeRight
-	operationTypeLeft
+	rotationSet rotationDirection = iota
+	rotationRight
+	rotationLeft
 )
 
 //go:embed input.txt
 var input string
 
-type operation struct {
-	operationType operationType
-	argument      int
+type dialManipulation struct {
+	direction rotationDirection
+	clicks    int
 }
 
 func main() {
-	inputStream := startInputStream(50)
-	wrapsCountChan := startStater(inputStream)
+	inputStream := startManipulationInputStream(50)
+	wrapsCountChan := startDial(inputStream, 100)
 	resultChan := startOutputter(wrapsCountChan)
 
 	result := <-resultChan
 
 	fmt.Println(result)
-
-	//5856
-	//5847
 }
 
-func startInputStream(startPoint int) <-chan operation {
-	output := make(chan operation)
+func startManipulationInputStream(startingPoint int) <-chan dialManipulation {
+	output := make(chan dialManipulation)
 
-	lines := strings.Split(input, "\n")
-
-	go func(ch chan<- operation) {
+	go func(ch chan<- dialManipulation) {
 		defer close(ch)
-		ch <- operation{operationType: operationTypeSet, argument: startPoint}
+		ch <- dialManipulation{direction: rotationSet, clicks: startingPoint}
 
+		lines := strings.Split(input, "\n")
 		for _, line := range lines {
 			op, err := splitLine(line)
 			if err != nil {
@@ -59,29 +55,45 @@ func startInputStream(startPoint int) <-chan operation {
 	return output
 }
 
-func startStater(input <-chan operation) (zeroChan <-chan int) {
+func startDial(input <-chan dialManipulation, base int) (zeroChan <-chan int) {
 	zeroChannel := make(chan int)
-	go func(ch <-chan operation, zChan chan<- int) {
+
+	go func(zc chan<- int) {
 		state := 0
-		var wraps int
 		for {
-			op, ok := <-ch
+			op, ok := <-input
 			if !ok {
 				close(zeroChannel)
 				return
 			}
-			switch op.operationType {
-			case operationTypeSet:
-				state = op.argument % 100
+			wraps := 0
+			switch op.direction {
+			case rotationSet:
+				state = op.clicks % base
 				continue
-			case operationTypeRight:
-				state, wraps = incrementWithWrapCount(state, op.argument, 100)
-			case operationTypeLeft:
-				state, wraps = decrementWithWrapCount(state, op.argument, 100)
+			case rotationRight:
+				for i := 0; i < op.clicks; i++ {
+					state++
+					if state == base {
+						state = 0
+						wraps++
+					}
+				}
+			case rotationLeft:
+				for i := 0; i < op.clicks; i++ {
+					state--
+					if state == 0 {
+						wraps++
+						continue
+					}
+					if state < 0 {
+						state = base - 1
+					}
+				}
 			}
-			zChan <- wraps
+			zc <- wraps
 		}
-	}(input, zeroChannel)
+	}(zeroChannel)
 
 	return zeroChannel
 }
@@ -94,50 +106,32 @@ func startOutputter(zeroStream <-chan int) (resultChan <-chan int) {
 			rc <- sum
 		}()
 		for {
-			c, ok := <-stream
+			wraps, ok := <-stream
 			if !ok {
 				return
 			}
-			sum += c
+			sum += wraps
 		}
 	}(zeroStream)
 
 	return rc
 }
 
-func incrementWithWrapCount(state, increment, base int) (newState, wraps int) {
-	newState = (state + increment) % base
-	wraps = (state + increment) / base
-	return newState, wraps
-}
-
-func decrementWithWrapCount(state, decrement, base int) (newState, wraps int) {
-	newState = (state - decrement%base + base) % base
-	if state == 0 {
-		wraps = decrement / base
-	} else if decrement >= state {
-		wraps = 1 + (decrement-state)/base
-	} else {
-		wraps = 0
-	}
-	return newState, wraps
-}
-
-func splitLine(line string) (operation, error) {
-	var ot operationType
+func splitLine(line string) (dialManipulation, error) {
+	var direction rotationDirection
 	switch line[0] {
 	case 'R', 'r':
-		ot = operationTypeRight
+		direction = rotationRight
 	case 'L', 'l':
-		ot = operationTypeLeft
+		direction = rotationLeft
 	default:
-		return operation{}, errors.New("invalid operation type")
+		return dialManipulation{}, errors.New("invalid rotationDirection type")
 	}
 
 	arg, err := strconv.Atoi(line[1:])
 	if err != nil {
-		return operation{}, err
+		return dialManipulation{}, err
 	}
 
-	return operation{operationType: ot, argument: arg}, nil
+	return dialManipulation{direction: direction, clicks: arg}, nil
 }
