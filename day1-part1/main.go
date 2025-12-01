@@ -51,7 +51,7 @@ func main() {
 func startDial(input <-chan dialManipulation) (zeroChan <-chan struct{}) {
 	zeroChannel := make(chan struct{})
 	go func(ch <-chan dialManipulation, zChan chan<- struct{}) {
-		state := 0
+		position := 0
 		for {
 			op, ok := <-ch
 			if !ok {
@@ -60,14 +60,14 @@ func startDial(input <-chan dialManipulation) (zeroChan <-chan struct{}) {
 			}
 			switch op.direction {
 			case rotationSet:
-				state = op.clicks % 100
+				position = op.clicks % 100
 			case rotationRight:
-				state = (state + op.clicks) % 100
+				position = (position + op.clicks) % 100
 			case rotationLeft:
-				state = (state - op.clicks%100 + 100) % 100
+				position = (position - op.clicks%100 + 100) % 100
 			}
 
-			if state == 0 {
+			if position == 0 {
 				zChan <- struct{}{}
 			}
 		}

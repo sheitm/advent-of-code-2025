@@ -14,6 +14,9 @@ const (
 	rotationSet rotationDirection = iota
 	rotationRight
 	rotationLeft
+
+	startingPoint = 50
+	dialSize      = 100
 )
 
 //go:embed input.txt
@@ -25,8 +28,8 @@ type dialManipulation struct {
 }
 
 func main() {
-	inputStream := startManipulationInputStream(50)
-	wrapsCountChan := startDial(inputStream, 100)
+	inputStream := startManipulationInputStream(startingPoint)
+	wrapsCountChan := startDial(inputStream, dialSize)
 	resultChan := startOutputter(wrapsCountChan)
 
 	result := <-resultChan
@@ -34,20 +37,20 @@ func main() {
 	fmt.Println(result)
 }
 
-func startManipulationInputStream(startingPoint int) <-chan dialManipulation {
+func startManipulationInputStream(sPoint int) <-chan dialManipulation {
 	output := make(chan dialManipulation)
 
 	go func(ch chan<- dialManipulation) {
 		defer close(ch)
-		ch <- dialManipulation{direction: rotationSet, clicks: startingPoint}
+		ch <- dialManipulation{direction: rotationSet, clicks: sPoint}
 
 		lines := strings.Split(input, "\n")
 		for _, line := range lines {
-			op, err := splitLine(line)
+			manipulation, err := splitLine(line)
 			if err != nil {
 				panic(err)
 			}
-			ch <- op
+			ch <- manipulation
 		}
 
 	}(output)
@@ -59,7 +62,7 @@ func startDial(input <-chan dialManipulation, base int) (zeroChan <-chan int) {
 	zeroChannel := make(chan int)
 
 	go func(zc chan<- int) {
-		state := 0
+		position := 0
 		for {
 			op, ok := <-input
 			if !ok {
@@ -69,25 +72,25 @@ func startDial(input <-chan dialManipulation, base int) (zeroChan <-chan int) {
 			wraps := 0
 			switch op.direction {
 			case rotationSet:
-				state = op.clicks % base
+				position = op.clicks % base
 				continue
 			case rotationRight:
 				for i := 0; i < op.clicks; i++ {
-					state++
-					if state == base {
-						state = 0
+					position++
+					if position == base {
+						position = 0
 						wraps++
 					}
 				}
 			case rotationLeft:
 				for i := 0; i < op.clicks; i++ {
-					state--
-					if state == 0 {
+					position--
+					if position == 0 {
 						wraps++
 						continue
 					}
-					if state < 0 {
-						state = base - 1
+					if position < 0 {
+						position = base - 1
 					}
 				}
 			}
