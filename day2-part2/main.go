@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const countIDCheckers = 10
+const degreeOfFanOut = 10
 
 //go:embed input.txt
 var input string
@@ -15,16 +15,16 @@ var input string
 func main() {
 	checkedIDs := make(chan int)
 	inputStream, countChan := startInputStream()
-	//inputStream, countChan := startTestInputStream(95, 115)
-	for i := 0; i < countIDCheckers; i++ {
+	//inputStream, countChan := startTestInputStream(1188511880, 1188511890)
+	for i := 0; i < degreeOfFanOut; i++ {
 		startChecker(inputStream, checkedIDs)
 	}
 
 	resultChan := startResultStream(checkedIDs, countChan)
 
-	result := <-resultChan
+	res := <-resultChan
 
-	fmt.Println(result)
+	fmt.Printf("Manipulation complete! Result: %v\n", res)
 
 	// part1 -> 28146997880
 }
@@ -82,7 +82,7 @@ func startChecker(incoming <-chan int, checkedIDs chan<- int) {
 			if !ok {
 				break
 			}
-			outChan <- checkID(id)
+			outChan <- checkId(id)
 		}
 	}(incoming, checkedIDs)
 }
@@ -114,15 +114,38 @@ func startResultStream(checkedIDs, countChan <-chan int) <-chan int {
 	return output
 }
 
-func checkID(id int) int {
-	s := fmt.Sprintf("%d", id)
-	if len(s)%2 != 0 {
-		return 0
-	}
-	d := len(s) / 2
-	if s[0:d] == s[d:] {
-		return id
+func checkId(id int) int {
+	ids := fmt.Sprintf("%d", id)
+	lim := len(ids) / 2
+	for i := 1; i <= lim; i++ {
+		if isInvalidStep(ids, i) {
+			return id
+		}
 	}
 
 	return 0
+}
+
+func isInvalidStep(ids string, step int) bool {
+	l := len(ids)
+	if l%step != 0 {
+		return false
+	}
+
+	check := ids[0:step]
+
+	i := step
+	for {
+		if i+step > l {
+			break
+		}
+
+		candidate := ids[i : i+step]
+		if candidate != check {
+			return false
+		}
+		i += step
+	}
+
+	return true
 }
