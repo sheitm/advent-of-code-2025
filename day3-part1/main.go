@@ -13,10 +13,13 @@ var input string
 const degreeOfFanOut = 10
 
 func main() {
+	// batteryCount == 2 for part 1
+	// batteryCount == 12 for part 2
+	batteryCount := 12
 	bankStream, countChan := startBatteryBankStream()
 	joltageStream := make(chan int)
 	for i := 0; i < degreeOfFanOut; i++ {
-		startBankComputer(bankStream, joltageStream)
+		startBankComputer(bankStream, joltageStream, batteryCount)
 	}
 	resultChan := startResultComputer(joltageStream, countChan)
 
@@ -45,14 +48,14 @@ func startBatteryBankStream() (bankStream <-chan string, countChan <-chan int) {
 	return bStream, cChan
 }
 
-func startBankComputer(bankChan <-chan string, outputChan chan<- int) {
+func startBankComputer(bankChan <-chan string, outputChan chan<- int, batteryCount int) {
 	go func(bc <-chan string, oc chan<- int) {
 		for {
 			bank, ok := <-bc
 			if !ok {
 				break
 			}
-			oc <- highestJoltageInBank(bank)
+			oc <- highestJoltageInBank(bank, batteryCount)
 		}
 	}(bankChan, outputChan)
 }
@@ -83,24 +86,92 @@ func startResultComputer(joltageChan <-chan int, countChan <-chan int) <-chan in
 	return resultChan
 }
 
-func highestJoltageInBank(bank string) int {
-	highest, pos := 0, 0
-
-	for i := 0; i < len(bank)-1; i++ {
-		p, _ := strconv.Atoi(string(bank[i]))
-		if p > highest {
-			highest = p
-			pos = i
-		}
+func highestJoltageInBank(bank string, batteryCount int) int {
+	var source []int
+	for _, dc := range bank {
+		d, _ := strconv.Atoi(string(dc))
+		source = append(source, d)
 	}
 
-	nextHighest := 0
-	for i := pos + 1; i < len(bank); i++ {
-		p, _ := strconv.Atoi(string(bank[i]))
-		if p > nextHighest {
-			nextHighest = p
-		}
+	accum := highest(source, batteryCount, nil)
+	s := ""
+	for _, i := range accum {
+		s += strconv.Itoa(i)
 	}
+	sum, _ := strconv.Atoi(s)
+	return sum
 
-	return (highest * 10) + nextHighest
+	//highest, pos := 0, 0
+	//
+	//for i := 0; i < len(bank)-1; i++ {
+	//	p, _ := strconv.Atoi(string(bank[i]))
+	//	if p > highest {
+	//		highest = p
+	//		pos = i
+	//	}
+	//}
+	//
+	//nextHighest := 0
+	//for i := pos + 1; i < len(bank); i++ {
+	//	p, _ := strconv.Atoi(string(bank[i]))
+	//	if p > nextHighest {
+	//		nextHighest = p
+	//	}
+	//}
+	//
+	//return (highest * 10) + nextHighest
 }
+
+func highest(source []int, rem int, accum []int) []int {
+	h, p := 0, 0
+	lim := len(source) - rem
+	for i := 0; i <= lim; i++ {
+		if source[i] > h {
+			h = source[i]
+			p = i
+		}
+	}
+
+	accum = append(accum, h)
+	r := rem - 1
+	if r == 0 {
+		return accum
+	}
+
+	var remSource []int
+	for i := p + 1; i < len(source); i++ {
+		remSource = append(remSource, source[i])
+	}
+
+	return highest(remSource, r, accum)
+}
+
+//func highestJoltageInBankLength(bank string, length int) int {
+//	var highest []int
+//	pos := -1
+//	for {
+//		rem := len(bank) - pos - 1
+//		h := 0
+//		for i := pos + 1; i <= len(bank)-rem; i++ {
+//			d, _ := strconv.Atoi(string(bank[i]))
+//			if d > h {
+//				h = d
+//				pos = i
+//			}
+//		}
+//		highest = append(highest, h)
+//		if len(highest) == length {
+//			break
+//		}
+//	}
+//
+//	joltage := 0
+//	for i := 0; i < len(highest); i++ {
+//		f := 1
+//		for j := i + 1; j < (length - i); j++ {
+//			f = f * 10
+//		}
+//		joltage += highest[i] * f
+//	}
+//	return joltage
+//}
