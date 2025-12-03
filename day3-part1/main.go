@@ -100,26 +100,6 @@ func highestJoltageInBank(bank string, batteryCount int) int {
 	}
 	sum, _ := strconv.Atoi(s)
 	return sum
-
-	//highest, pos := 0, 0
-	//
-	//for i := 0; i < len(bank)-1; i++ {
-	//	p, _ := strconv.Atoi(string(bank[i]))
-	//	if p > highest {
-	//		highest = p
-	//		pos = i
-	//	}
-	//}
-	//
-	//nextHighest := 0
-	//for i := pos + 1; i < len(bank); i++ {
-	//	p, _ := strconv.Atoi(string(bank[i]))
-	//	if p > nextHighest {
-	//		nextHighest = p
-	//	}
-	//}
-	//
-	//return (highest * 10) + nextHighest
 }
 
 func highest(source []int, rem int, accum []int) []int {
@@ -145,33 +125,3 @@ func highest(source []int, rem int, accum []int) []int {
 
 	return highest(remSource, r, accum)
 }
-
-//func highestJoltageInBankLength(bank string, length int) int {
-//	var highest []int
-//	pos := -1
-//	for {
-//		rem := len(bank) - pos - 1
-//		h := 0
-//		for i := pos + 1; i <= len(bank)-rem; i++ {
-//			d, _ := strconv.Atoi(string(bank[i]))
-//			if d > h {
-//				h = d
-//				pos = i
-//			}
-//		}
-//		highest = append(highest, h)
-//		if len(highest) == length {
-//			break
-//		}
-//	}
-//
-//	joltage := 0
-//	for i := 0; i < len(highest); i++ {
-//		f := 1
-//		for j := i + 1; j < (length - i); j++ {
-//			f = f * 10
-//		}
-//		joltage += highest[i] * f
-//	}
-//	return joltage
-//}
