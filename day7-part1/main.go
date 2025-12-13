@@ -45,15 +45,15 @@ func compute(levels [][]bool, beams []int, hits, currentLevel int) (int, int, []
 		return 0, hits, beams
 	}
 
-	mp := map[int]bool{}
+	mp := map[int]struct{}{}
 	for _, beam := range beams {
 		if levels[currentLevel][beam] {
-			mp[beam+1] = true
-			mp[beam-1] = true
+			mp[beam+1] = struct{}{}
+			mp[beam-1] = struct{}{}
 			hits++
 			continue
 		}
-		mp[beam] = true
+		mp[beam] = struct{}{}
 	}
 
 	var nextBeams []int
