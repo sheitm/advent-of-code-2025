@@ -13,23 +13,19 @@ var input string
 var testInput string
 
 func main() {
+	part2()
+}
+
+func part1() {
 	b := loadBoard(input)
 	c := b.countFewerThan(4)
 	fmt.Println(c)
+}
 
-	////c := b.countNeighbors(2, 0)
-	////fmt.Println(c)
-	//
-	//counts := b.counts()
-	//for y := 0; y < len(counts); y++ {
-	//	for x := 0; x < len(counts[y]); x++ {
-	//		fmt.Print(counts[y][x])
-	//	}
-	//	fmt.Println()
-	//}
-	//
-	//// 1218 is too low!
-	//fmt.Println(b.countAccessibleRolls(4))
+func part2() {
+	b := loadBoard(input)
+	c := b.reduce(4)
+	fmt.Print(c)
 }
 
 func loadBoard(inp string) *board {
@@ -47,6 +43,45 @@ func loadBoard(inp string) *board {
 
 type board struct {
 	cells [][]bool
+}
+
+func (b *board) reduce(lim int) int {
+	count := 0
+	for {
+		c, r := b.reduceAndCount(lim)
+		count += c
+		if !r {
+			break
+		}
+	}
+
+	return count
+}
+
+func (b *board) reduceAndCount(lim int) (int, bool) {
+	var newCells [][]bool
+	reduced := false
+	reduceCount := 0
+	for y := 0; y < len(b.cells); y++ {
+		var newRow []bool
+		for x := 0; x < len(b.cells[y]); x++ {
+			if !b.cells[y][x] {
+				newRow = append(newRow, false)
+				continue
+			}
+			c := b.countNeighbors(x, y)
+			if c < lim {
+				newRow = append(newRow, false)
+				reduced = true
+				reduceCount++
+				continue
+			}
+			newRow = append(newRow, true)
+		}
+		newCells = append(newCells, newRow)
+	}
+	b.cells = newCells
+	return reduceCount, reduced
 }
 
 func (b *board) countFewerThan(lim int) int {
